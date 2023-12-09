@@ -1,0 +1,53 @@
+.config {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    cursor: pointer;
+    gap: 10px;
+    transition: all .3s ease;
+}
+
+.config__icons{
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    margin: 0;
+    gap: 5px;
+}
+
+.config span:hover {
+    box-shadow: var(--input-focus);
+}
+
+.config .colors{
+    background-color: var(--bg--container);
+}
+
+.config .colors span{
+    display: inline-block;
+    height: 30px;
+    width: 30px;
+    border-radius: 50%;
+    border: 1px solid red;
+}
+
+
+.config .color-1{
+    background-color: #ec1839;
+}
+
+.config .color-2{
+    background-color: #fa5b0f;
+}
+.config .color-3{
+    background-color: #37b182;
+}
+.config .color-4{
+    background-color: #1854b4;
+}
+.config .color-5{
+    background-color: #f021b2;
+}

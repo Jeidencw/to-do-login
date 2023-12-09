@@ -1,12 +1,26 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
 
 :root {
-    --primary-color: #4CAF50;
-    --secondary-color: #3e8e41;
-    --light-color: #7cc47f;
+    --bg--body: #f1f1f1;
+    --bg--container: whitesmoke;
     --primary-shadow: 10px 10px 5px rgba(0, 0, 0, 0.2);
-    --secondary-shadow: 4px 4px 3px 0 rgba(0, 0, 0, 0.2);
+    --secondary-shadow: 3px 3px 6px 0 rgba(0, 0, 0, 0.2);
     --input-shadow: 2px 2px 8px 2px rgba(0, 0, 0, 0.2);
+    --input-focus: 0px 5px 5px 0px rgba(0, 0, 0, 0.7);
+}
+
+body{
+    transition: all .5s ease;
+    background-color: var(--bg--body);
+}
+
+body.dark{
+    --bg--body: #1E1E1E;
+    --bg--container: #333333 ;
+    --primary-shadow: 10px 10px 5px rgba(255, 255, 255, 0.2);
+    --secondary-shadow: 3px 3px 6px 0 rgba(255, 255, 255, 0.2);
+    --input-shadow: 2px 2px 8px 2px rgba(255, 255, 255, 0.2);
+    --input-focus: 0px 5px 5px 0px rgba(255, 255, 255, 0.7);
 }
 
 * {
@@ -24,35 +38,25 @@
     padding: 20px;
     box-shadow: var(--primary-shadow);
     border-radius: 5px;
-    background-color: whitesmoke;
+    background-color: var(--bg--container);
+    transition: all .5s ease;
 }
 
 .todo__header {
     width: 100%;
     display: flex;
     align-items: center;
-    justify-content: center;
     position: relative;
-}
-
-.config {
-    position: absolute;
-    top: 0;
-    right: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
 }
 
 .container__search {
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--primary-color);
     border-radius: 3px;
     box-shadow: var(--input-shadow);
+    margin-right: 35px;
+    flex: 1;
 }
 
 .input__search, .dropbtn, .search__icon {
@@ -61,27 +65,28 @@
     border: none;
     cursor: pointer;
     background-color: transparent;
+    transition: all .3s ease;
 }
 
 .input__search {
     outline: none;
+    flex: 1;
+}
+
+.input__search:focus {
+    box-shadow: var(--input-focus);
 }
 
 .search__icon {
-    font-size: 20px;
+    font-size: 25px;
     height: 22px;
 }
 
 .search__icon:hover {
-    background-color: var(--secondary-color);
+    box-shadow: var(--input-focus);
 }
 
 /* Dropdown */
-.dropbtn {
-    border-right: 1px solid var(--primary-color);
-    border-left: 1px solid var(--primary-color);
-}
-
 .input__search::placeholder {
     color: var(--light-color);
 }
@@ -94,7 +99,7 @@
 .dropdown__content {
     display: none;
     position: absolute;
-    background-color: #f9f9f9;
+    background-color: var(--bg--container);
     min-width: 160px;
     box-shadow: var(--secondary-shadow);
     z-index: 1;
@@ -107,7 +112,7 @@
 }
 
 .dropdown__content p:hover {
-    background-color: var(--secondary-color)
+    box-shadow: var(--input-focus);
 }
 
 .dropdown:hover .dropdown__content {
@@ -115,7 +120,7 @@
 }
 
 .dropdown:hover .dropbtn {
-    background-color: var(--secondary-color);
+    box-shadow: var(--input-focus);
 }
 
 /* TODO */
@@ -151,6 +156,11 @@
 .todo__item-icons {
     cursor: pointer;
     gap: 5px;
+    transition: all .3s ease;
+}
+
+.todo__item-icons span:hover{
+    box-shadow: var(--input-focus);
 }
 
 /* Add input */
@@ -159,21 +169,58 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: var(--input-shadow);
+    border-radius: 3px;
+    width: 80%;
+    margin: 0 auto;
 }
 
 .add__input {
-    margin: auto 0;
     padding: 16px;
-    font-size: 18px;
+    font-size: 18px;    
     border: none;
     cursor: pointer;
     background-color: transparent;
-    width: 80%;
     outline: none;
-    box-shadow: var(--input-shadow);
-    border-radius: 3px;
+    flex: 1;
+    transition: box-shadow .3s ease;
 }
 
 .add__input::placeholder {
     color: var(--light-color);
+}
+
+.add__input:focus {
+    box-shadow:  var(--input-focus);
+}
+
+input[type="date"] {
+    padding: 16px 5px;
+    font-size: 17px;
+    background-color: transparent;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    transition: all .3s ease;
+}
+
+input[type="date"]:hover {
+    box-shadow: var(--input-shadow);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: var(--input-date);
+    cursor: pointer;
+}
+
+.add__icon {
+    font-size: 25px;
+    height: 22px;
+    padding: 16px;
+    transition: all .3s ease;
+    cursor: pointer;
+}
+
+.add__icon:hover {
+    box-shadow: var(--input-focus);
 }
