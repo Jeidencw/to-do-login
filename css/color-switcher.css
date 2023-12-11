@@ -24,16 +24,18 @@
 
 .config .colors{
     background-color: var(--bg--container);
+    display: none;
+    opacity: 0;
+    transition: all .3s ease;
 }
 
-.config .colors span{
+.config .colors span {
     display: inline-block;
     height: 30px;
     width: 30px;
     border-radius: 50%;
-    border: 1px solid red;
+    border: 1px solid var(--primary-color);
 }
-
 
 .config .color-1{
     background-color: #ec1839;
@@ -43,10 +45,10 @@
     background-color: #fa5b0f;
 }
 .config .color-3{
-    background-color: #37b182;
+    background-color: #4CAF50;
 }
 .config .color-4{
-    background-color: #1854b4;
+    background-color: black;
 }
 .config .color-5{
     background-color: #f021b2;

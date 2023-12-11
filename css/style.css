@@ -9,6 +9,14 @@
     --input-focus: 0px 5px 5px 0px rgba(0, 0, 0, 0.7);
 }
 
+* {
+    padding: 0;
+    margin: 0;
+    font-family: 'Roboto', Arial, Helvetica, sans-serif;
+    list-style: none;
+    color: var(--primary-color);
+}
+
 body{
     transition: all .5s ease;
     background-color: var(--bg--body);
@@ -16,19 +24,16 @@ body{
 
 body.dark{
     --bg--body: #1E1E1E;
-    --bg--container: #333333 ;
-    --primary-shadow: 10px 10px 5px rgba(255, 255, 255, 0.2);
-    --secondary-shadow: 3px 3px 6px 0 rgba(255, 255, 255, 0.2);
-    --input-shadow: 2px 2px 8px 2px rgba(255, 255, 255, 0.2);
-    --input-focus: 0px 5px 5px 0px rgba(255, 255, 255, 0.7);
+    --bg--container: #424242 ;
+    --primary-shadow: 10px 10px 5px rgba(200 , 200 , 200 , 0.4);
+    --secondary-shadow: 3px 4px 7px 0 rgba(150, 150, 150, 0.2);
+    --input-shadow: 2px 2px 8px 2px rgba(150, 150, 150, 0.2);
+    --input-focus: 0px 3px 3px 0px rgba(150, 150, 150, 0.5);
 }
 
-* {
-    padding: 0;
-    margin: 0;
-    font-family: 'Roboto', Arial, Helvetica, sans-serif;
-    list-style: none;
-    color: var(--primary-color);
+button {
+    background-color: transparent;
+    border: none;
 }
 
 .container__todo {
@@ -130,7 +135,7 @@ body.dark{
     margin: 25px 0;
 }
 
-.todo__task {
+.todo__tasks {
     display: flex;
     flex: 1;
     padding: 12px 0;
@@ -139,8 +144,20 @@ body.dark{
     gap: 8px;
 }
 
-.todo__task input {
+.todo__tasks input {
     cursor: pointer;
+}
+
+.todo__text {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    align-items: center;
+    margin: 0 5px;
+}
+
+.task{
+    flex: 1;
 }
 
 .todo__item {
@@ -196,6 +213,7 @@ body.dark{
 
 input[type="date"] {
     padding: 16px 5px;
+    width: 130px;
     font-size: 17px;
     background-color: transparent;
     border: none;

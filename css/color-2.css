@@ -1,0 +1,5 @@
+:root {
+    --primary-color: #fa5b0f;
+    --light-color: #e69874;
+    --input-date: invert(75%) sepia(100%) saturate(1500%) hue-rotate(310deg) brightness(100%) contrast(100%);
+}

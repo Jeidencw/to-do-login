@@ -1,5 +1,5 @@
 :root {
-    --primary-color: #4CAF50;
-    --light-color: #7cc47f;
-    --input-date: invert(44%) sepia(60%) saturate(2000%) hue-rotate(100deg) brightness(90%) contrast(101%);
+    --primary-color: #ec1839;
+    --light-color: #ec8998;
+    --input-date: invert(35%) sepia(70%) saturate(2000%) hue-rotate(690deg) brightness(90%) contrast(120%);
 }
