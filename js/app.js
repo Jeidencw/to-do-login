@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js"
-import { getFirestore, collection, addDoc, doc, onSnapshot,deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"
+import { getFirestore, collection, addDoc, doc, onSnapshot,deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"
 
 const formAddTask = document.querySelector('[data-js="add__task"]')
 const pageLogin = document.querySelector('[data-js="login__page"]')
@@ -23,6 +23,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig)
 const analytics = getAnalytics(app)
 const db = getFirestore(app)
+const collectionTask = collection(db, 'tasks')
 
 
 formMenuButtons.forEach(button => {
@@ -64,59 +65,60 @@ formMenuButtons.forEach(button => {
     </li>
 */
 
-const renderTasks = () => {
-    onSnapshot(collection(db, 'tasks'), snapshot => {
+const renderTasks = snapshot => {
         const documentFragment = document.createDocumentFragment()
 
         snapshot.docChanges().forEach(docChange => {
             const { taskValue, date } = docChange.doc.data()
+            const id = docChange.doc.id
 
-            const li = document.createElement('li')
-            const divTasks = document.createElement('div')
-            const checkbox = document.createElement('input')
-            const divText = document.createElement('div')
-            const pTask = document.createElement('p')
-            const pDate = document.createElement('p')
-            const divIcons = document.createElement('div')
-            const spanTrash = document.createElement('span')
-            const spanEdit = document.createElement('span')
+            if(docChange.type === 'added'){
+                const li = document.createElement('li')
+                const divTasks = document.createElement('div')
+                const checkbox = document.createElement('input')
+                const divText = document.createElement('div')
+                const pTask = document.createElement('p')
+                const pDate = document.createElement('p')
+                const divIcons = document.createElement('div')
+                const spanTrash = document.createElement('span')
+                const spanEdit = document.createElement('span')
+                
+                li.classList.add('todo__item')
+                li.setAttribute('data-item', id)
+                li.setAttribute('data-id', id)
+                divTasks.classList.add('todo__tasks')
+                checkbox.type = 'checkbox'
+                checkbox.setAttribute('data-check', id)
+                divText.classList.add('todo__text')
+                pTask.classList.add('task')
+                pDate.classList.add('date')
+                pTask.setAttribute('data-task', id)
+                pTask.textContent = taskValue
+                pDate.setAttribute('data-date', id)
+                pDate.textContent = date
+                divIcons.classList.add('todo__item-icons')
+                spanTrash.classList.add('material-symbols-outlined')
+                spanEdit.classList.add('material-symbols-outlined')
+                spanTrash.setAttribute('data-trash', id)
+                spanEdit.setAttribute('data-edit', id)
+                spanTrash.textContent = 'delete'
+                spanEdit.textContent = 'edit'
             
-            li.classList.add('todo__item')
-            li.setAttribute('data-item', taskValue)
-            li.setAttribute('data-id', docChange.doc.id)
-            divTasks.classList.add('todo__tasks')
-            checkbox.type = 'checkbox'
-            checkbox.setAttribute('data-check', taskValue)
-            divText.classList.add('todo__text')
-            pTask.classList.add('task')
-            pDate.classList.add('date')
-            pTask.setAttribute('data-task', taskValue)
-            pTask.textContent = taskValue
-            pDate.setAttribute('data-date', taskValue)
-            pDate.textContent = date
-            divIcons.classList.add('todo__item-icons')
-            spanTrash.classList.add('material-symbols-outlined')
-            spanEdit.classList.add('material-symbols-outlined')
-            spanTrash.setAttribute('data-trash', taskValue)
-            spanEdit.setAttribute('data-edit', taskValue)
-            spanTrash.textContent = 'delete'
-            spanEdit.textContent = 'edit'
-        
-            divTasks.append(checkbox, divText)
-            divText.append(pTask, pDate)
-            divIcons.append(spanEdit, spanTrash)
-            li.append(divTasks, divIcons)
+                divTasks.append(checkbox, divText)
+                divText.append(pTask, pDate)
+                divIcons.append(spanEdit, spanTrash)
+                li.append(divTasks, divIcons)
 
-            documentFragment.append(li)
+                documentFragment.append(li)
+            }
         })
         todoList.append(documentFragment)
-    })
 }
 
-renderTasks()
+onSnapshot(collectionTask, renderTasks)
 
 const addTask = async ({ taskValue, date }) => {
-    const docRef = await addDoc(collection(db, 'tasks'), {
+    const docRef = await addDoc(collectionTask, {
         taskValue,
         date
     })
@@ -128,14 +130,30 @@ const delTask = async value => {
     const taskToDelete = document.querySelector(`[data-item="${value}"]`)
     const idToDelete = taskToDelete.dataset.id
 
-    await deleteDoc(doc(db, "tasks", idToDelete))
+    try {
+        await deleteDoc(doc(db, "tasks", idToDelete))
+
+        taskToDelete.remove()
+    } catch (error) {
+        console.log('Erro ao deletar tarefa')
+    }
+}
+
+const checkTask = async idChecked => {
+    try {
+        await updateDoc(doc(db, "tasks", idChecked), {
+            checked: true
+        })
+    } catch (error) {
+        console.log('Erro ao confirmar')
+    }
 }
 
 const handleAddForm =  e => {
     e.preventDefault()
 
-    const taskValue = e.target.add__input.value
-    const date = e.target.date.value
+    const taskValue = DOMPurify.sanitize(e.target.add__input.value)
+    const date = DOMPurify.sanitize(e.target.date.value)
         .split('-')
         .reverse()
         .join('/')
@@ -151,6 +169,7 @@ ul.addEventListener('click', e => {
     const checkBtn = e.target.dataset.check
 
     if(deteleBtn)delTask(deteleBtn)
+    if(checkBtn)checkTask(checkBtn)
 })
 
 formAddTask.addEventListener('submit', handleAddForm)
