@@ -128,6 +128,10 @@ button {
     display: block;
 }
 
+/* .dropdown .dropdown__content {
+    display: block;
+} */
+
 .dropdown:hover .dropbtn {
     box-shadow: var(--input-focus);
 }

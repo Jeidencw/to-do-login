@@ -16,7 +16,8 @@
     <title>To Do List</title>
 </head>
 <body>
-    <div class="container__login" style="display: none;">
+    <button data-js="log-out">Sair</button>
+    <div data-js="container__login" class="container__login">
         <div class="login__menu">
             <button class="active">Login</button>
             <button>Cadastro</button>
@@ -25,8 +26,8 @@
         <div data-js="login__page" class="login__form form">
             <h1>Login</h1>
             <form data-js="login">
-                <input type="text" placeholder="Usuário" required>
-                <input type="password" placeholder="Senha" required>
+                <input type="text" name="login__user" placeholder="Usuário" required>
+                <input type="password" name="login__password" placeholder="Senha" required>
                 <button>Acessar</button>
             </form>
             <div class="login__icons">
@@ -37,10 +38,10 @@
 
         <div data-js="cadastro__page" class="cadastro__form form">
             <h1>Cadastro</h1>
-            <form>
-                <input type="text" placeholder="Usuário" required>
-                <input type="password" placeholder="Senha" required>
-                <input type="password" placeholder="Confirmar senha" required>
+            <form data-js="register">
+                <input type="email" name="register__user" placeholder="Usuário" required>
+                <input type="password" name="register__password" placeholder="Senha" required>
+                <input type="password" name="register__confirmed" placeholder="Confirmar senha" required>
                 <button>Cadastrar</button>
             </form>
             <div class="login__icons">
@@ -50,7 +51,7 @@
         </div>
     </div>
 
-    <div class="container__todo">
+    <div data-js="container__todo" class="container__todo">
         <div class="todo__header">
             <div class="container__search">
                 <input class="input__search" type="text" placeholder="Pesquisar...">
@@ -108,7 +109,7 @@
         </div>
 
         <div class="todo">
-            <ul class="todo__list"></ul>
+            <ul data-js="nav-ul" class="todo__list"></ul>
         </div>
         
         <form data-js="add__task" class="todo__bottom">
@@ -124,6 +125,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" integrity="sha512-H+rglffZ6f5gF7UJgvH4Naa+fGCgjrHKMgoFOGmcPTRwR6oILo5R+gtzNrpDp7iMV3udbymBVjkeZGNz1Em4rQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script type="module" src="./js/app.js"></script>
+    <script type="module" src="./js/login.js"></script>
     <script src="./js/switch-color.js"></script>
 </body>
 </html>

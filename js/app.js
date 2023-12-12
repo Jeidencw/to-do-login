@@ -1,6 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js"
-import { getFirestore, collection, addDoc, doc, onSnapshot,deleteDoc, updateDoc, orderBy, query } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"
+import { getFirestore, collection, addDoc, doc, onSnapshot,deleteDoc, updateDoc, orderBy, query, where, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"
+
 
 const formAddTask = document.querySelector('[data-js="add__task"]')
 const pageLogin = document.querySelector('[data-js="login__page"]')
@@ -8,6 +10,12 @@ const pageCadastro = document.querySelector('[data-js="cadastro__page"]')
 const formMenuButtons = [...document.querySelector('.login__menu').children]
 const todoList = document.querySelector('.todo__list')
 const ul = document.querySelector('.todo__list')
+const orderAscDesc = document.querySelectorAll('input[name="order__asc-desc"]')
+const orderChecked = document.querySelectorAll('input[name="order__checked"]')
+
+const formLogin = document.querySelector('[data-js="login"]')
+const formRegister = document.querySelector('[data-js="register"]')
+const logOutBtn = document.querySelector('[data-js="log-out"]')
 
 const firebaseConfig = {
   apiKey: "AIzaSyA6GqGDGzYKZKSvTXtiiM8bsbv-cAI5jiQ",
@@ -24,6 +32,7 @@ const app = initializeApp(firebaseConfig)
 const analytics = getAnalytics(app)
 const db = getFirestore(app)
 const collectionTask = collection(db, 'tasks')
+const auth = getAuth(app)
 
 
 formMenuButtons.forEach(button => {
@@ -117,10 +126,13 @@ const renderTasks = snapshot => {
         todoList.append(documentFragment)
 }
 
+const clearLis = () => document.querySelectorAll('li').forEach(li => li.remove())
+
 const addTask = async ({ taskValue, date }) => {
     await addDoc(collectionTask, {
         taskValue,
-        date
+        date,
+        checked: false
     })
 }
 
@@ -167,8 +179,41 @@ const checkTask = async ({ checkBtn, isChecked }) => {
     }
 }
 
+const updateOrderList = () => {
+    let orderValue = orderBy('taskValue')
+    let whereValue = ''
+    
+    
+    orderAscDesc.forEach(radio => {
+        if(!radio.checked)return 
+
+        if(radio.value === 'order__asc' ){
+            orderValue = orderBy('taskValue')
+            clearLis()
+        }else{
+            orderValue = orderBy('taskValue', 'desc')
+            clearLis()
+        }
+    })
+    
+    orderChecked.forEach(radio => {
+        if(!radio.checked)return
+        
+        if(radio.value === 'Completas'){
+            whereValue = where("checked", "==", true)
+            clearLis()
+        }else if(radio.value === 'Incompletas'){
+            whereValue = where("checked", "==", false)
+            clearLis()
+        }
+    })
+
+    const queryOrder = query(collectionTask, whereValue, orderValue)
+    onSnapshot(queryOrder, renderTasks)
+}
+
 const handleAddForm =  e => {
-    e.preventDefault()
+    e.preventDefault()  
 
     const taskValue = DOMPurify.sanitize(e.target.add__input.value).trim()
     const date = DOMPurify.sanitize(e.target.date.value)
@@ -192,8 +237,95 @@ const ulController = e => {
     if(editBtn)editTask(editBtn)
 }
 
-const queryTest = query(collectionTask, orderBy('taskValue', 'desc'))
+formLogin.addEventListener('submit', e => {
+    e.preventDefault()
 
-onSnapshot(queryTest, renderTasks)
+    const loginUser = e.target.login__user.value
+    const loginPassword = e.target.login__password.value
+
+    try {
+        signInWithEmailAndPassword(auth, loginUser, loginPassword)
+
+    } catch (error) {
+        console.log(error)
+    }
+
+    e.target.reset()
+})
+
+formRegister.addEventListener('submit', async e => {
+    e.preventDefault()
+
+    const registerUser = e.target.register__user.value
+    const registerPassword = e.target.register__password.value
+    const registerPasswordConfirmed = e.target.register__confirmed.value
+
+    if(registerPassword === registerPasswordConfirmed){
+        try{
+            const userCredential = await createUserWithEmailAndPassword(auth, registerUser, registerPassword)
+            const user = userCredential.user
+
+
+        }catch(err){
+            console.log(err)
+        }
+    }
+
+
+    e.target.reset()
+})
+
+logOutBtn.addEventListener('click', async () => {
+    try {
+        await signOut(auth)
+        console.log('saiu')
+    } catch (error) {
+        console.log('erro ao sair')
+    }
+})
+
+const createUserDoc = async user => {
+    try {
+        const userDocRef = doc(db, 'users', user.uid)
+        const docSnapshot = await getDoc(userDocRef)
+
+        if(!docSnapshot.exist){
+            await setDoc(userDocRef, {
+                name: user.displayName,
+                email: user.email,
+                userID: user.uid
+            })
+        }
+
+    } catch (error) {
+        console.log('Erro ao registrar usuario')
+    }
+}
+
+onAuthStateChanged(auth, (user) => {
+    const loginContainer = document.querySelector('[data-js="container__login"]')
+    const todoContainer = document.querySelector('[data-js="container__todo"]')
+
+    if (user) {
+        createUserDoc(user)
+
+
+        loginContainer.style.display = 'none'
+        todoContainer.style.display = 'block'
+
+        const uid = user.uid
+    
+    } else {
+        todoContainer.style.display = 'none'
+        loginContainer.style.display = 'flex'
+    }
+})
+
+
+orderAscDesc.forEach(radio => radio.addEventListener('change', updateOrderList))
+orderChecked.forEach(radio => radio.addEventListener('change', updateOrderList))
+
+updateOrderList()
+
 ul.addEventListener('click', ulController)
 formAddTask.addEventListener('submit', handleAddForm)
