@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js"
-import { getFirestore, collection, addDoc, doc, onSnapshot,deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"
+import { getFirestore, collection, addDoc, doc, onSnapshot,deleteDoc, updateDoc, orderBy, query } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"
 
 const formAddTask = document.querySelector('[data-js="add__task"]')
 const pageLogin = document.querySelector('[data-js="login__page"]')
@@ -46,7 +46,7 @@ formMenuButtons.forEach(button => {
 //const isChecked = document.querySelector(`[data-check="${taskValue}"]`)
 
 /*
-    <li class="todo__item">
+    <li class="todo__item" data-id="id">
         <div class="todo__tasks">
             <input data-check="Tarefa 1" type="checkbox">
             <div class="todo__text">
@@ -69,7 +69,7 @@ const renderTasks = snapshot => {
         const documentFragment = document.createDocumentFragment()
 
         snapshot.docChanges().forEach(docChange => {
-            const { taskValue, date } = docChange.doc.data()
+            const { taskValue, date, checked } = docChange.doc.data()
             const id = docChange.doc.id
 
             if(docChange.type === 'added'){
@@ -89,8 +89,10 @@ const renderTasks = snapshot => {
                 divTasks.classList.add('todo__tasks')
                 checkbox.type = 'checkbox'
                 checkbox.setAttribute('data-check', id)
+                checked ? checkbox.setAttribute('checked', checked) : ''
                 divText.classList.add('todo__text')
                 pTask.classList.add('task')
+                pTask.setAttribute('class', checked ? 'checked' : '')
                 pDate.classList.add('date')
                 pTask.setAttribute('data-task', id)
                 pTask.textContent = taskValue
@@ -115,19 +117,15 @@ const renderTasks = snapshot => {
         todoList.append(documentFragment)
 }
 
-onSnapshot(collectionTask, renderTasks)
-
 const addTask = async ({ taskValue, date }) => {
-    const docRef = await addDoc(collectionTask, {
+    await addDoc(collectionTask, {
         taskValue,
         date
     })
-
-    console.log(docRef.id)
 }
 
-const delTask = async value => {
-    const taskToDelete = document.querySelector(`[data-item="${value}"]`)
+const delTask = async id => {
+    const taskToDelete = document.querySelector(`[data-item="${id}"]`)
     const idToDelete = taskToDelete.dataset.id
 
     try {
@@ -139,11 +137,31 @@ const delTask = async value => {
     }
 }
 
-const checkTask = async idChecked => {
+const editTask = async id => {
+    const mainDate = document.querySelector('#date')
+    const mainInputText = document.querySelector('.add__input')
+    const textToEdit = document.querySelector(`[data-task="${id}"]`).textContent
+    const dateToEdit = document.querySelector(`[data-date="${id}"]`)
+        .textContent
+        .split('/')
+        .reverse()
+        .join('-')
+
+
+    mainDate.value = dateToEdit
+    mainInputText.value = textToEdit
+    mainInputText.focus()
+}
+
+const checkTask = async ({ checkBtn, isChecked }) => {
     try {
-        await updateDoc(doc(db, "tasks", idChecked), {
-            checked: true
+        const changeText = document.querySelector(`[data-task="${checkBtn}"]`)
+
+        await updateDoc(doc(db, "tasks", checkBtn), {
+            checked: isChecked
         })
+
+        isChecked ? changeText.classList.add('checked') : changeText.classList.remove('checked')
     } catch (error) {
         console.log('Erro ao confirmar')
     }
@@ -152,7 +170,7 @@ const checkTask = async idChecked => {
 const handleAddForm =  e => {
     e.preventDefault()
 
-    const taskValue = DOMPurify.sanitize(e.target.add__input.value)
+    const taskValue = DOMPurify.sanitize(e.target.add__input.value).trim()
     const date = DOMPurify.sanitize(e.target.date.value)
         .split('-')
         .reverse()
@@ -163,13 +181,19 @@ const handleAddForm =  e => {
     e.target.reset()
 }
 
-ul.addEventListener('click', e => {
+const ulController = e => {
     const deteleBtn = e.target.dataset.trash
     const editBtn = e.target.dataset.edit
     const checkBtn = e.target.dataset.check
+    const isChecked = e.target.checked
 
     if(deteleBtn)delTask(deteleBtn)
-    if(checkBtn)checkTask(checkBtn)
-})
+    if(checkBtn)checkTask({ checkBtn, isChecked })
+    if(editBtn)editTask(editBtn)
+}
 
+const queryTest = query(collectionTask, orderBy('taskValue', 'desc'))
+
+onSnapshot(queryTest, renderTasks)
+ul.addEventListener('click', ulController)
 formAddTask.addEventListener('submit', handleAddForm)
