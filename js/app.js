@@ -13,6 +13,7 @@ const ul = document.querySelector('.todo__list')
 const inputSearch = document.querySelector('.input__search')
 const orderAscDesc = document.querySelectorAll('input[name="order__asc-desc"]')
 const orderChecked = document.querySelectorAll('input[name="order__checked"]')
+const orderAlphaDate = document.querySelectorAll('input[name="order__alpha-date"]')
 
 const formLogin = document.querySelector('[data-js="login"]')
 const formRegister = document.querySelector('[data-js="register"]')
@@ -81,10 +82,10 @@ const renderTasks = snapshot => {
         const { taskValue, date, checked } = docChange.doc.data()
         const id = docChange.doc.id
 
-        const dateFirestore = date.toDate()
-        const day = String(dateFirestore.getDate()).padStart(2, '0')
-        const month = String(dateFirestore.getMonth() + 1).padStart(2, '0')
-        const year = dateFirestore.getFullYear()
+        const dateFirestore = date?.toDate()
+        const day = String(dateFirestore?.getDate()).padStart(2, '0')
+        const month = String(dateFirestore?.getMonth() + 1).padStart(2, '0')
+        const year = dateFirestore?.getFullYear()
         
         const formatedDate = `${day}/${month}/${year}`
 
@@ -113,7 +114,7 @@ const renderTasks = snapshot => {
             pTask.setAttribute('data-task', id)
             pTask.textContent = taskValue
             pDate.setAttribute('data-date', id)
-            pDate.textContent = formatedDate === '12/12/2900' ? '' : formatedDate
+            pDate.textContent = formatedDate === 'undefined/NaN/undefined' ? '' : formatedDate
             divIcons.classList.add('todo__item-icons')
             spanTrash.classList.add('material-symbols-outlined')
             spanEdit.classList.add('material-symbols-outlined')
@@ -188,20 +189,19 @@ const checkTask = async ({ checkBtn, isChecked }) => {
 }
 
 const updateOrderList = user => {
-    let orderValue = orderBy('taskValue')
+    let inputName = 'taskValue'
+    let orderValue = orderBy(inputName)
     let whereValue = ''
     
     orderAscDesc.forEach(radio => {
         if(!radio.checked)return 
 
         if(radio.value === 'order__asc' ){
-            orderValue = orderBy('taskValue')
+            orderValue = orderBy(inputName)
             clearLis()
         }else if(radio.value === 'order__desc'){
-            orderValue = orderBy('taskValue', 'desc')
+            orderValue = orderBy(inputName, 'desc')
             clearLis()
-        }else{
-            orderValue = orderBy('date')
         }
     })
     
@@ -216,6 +216,19 @@ const updateOrderList = user => {
             clearLis()
         }
     })
+
+    orderAlphaDate.forEach(radio => {
+        if(!radio.checked)return
+        
+        if(radio.value === 'data' ){
+            inputName = 'date'
+            clearLis()
+        }else if(radio.value === 'alpha'){
+            inputName = 'taskValue'
+            clearLis()
+        }
+    })
+
 
     const onlyUser = where('userID', '==', user.uid)
 
@@ -236,8 +249,8 @@ const handleAddForm =  (e, user) => {
     const taskValue = DOMPurify.sanitize(e.target.add__input.value).trim()
     const dateInput = DOMPurify.sanitize(e.target.date.value)
     
-    let date = dateInput ? new Date(dateInput) : new Date('2900-12-12')
-    date.setMinutes(date.getMinutes() + date.getTimezoneOffset())
+    let date = dateInput ? new Date(dateInput) : null
+    date?.setMinutes(date.getMinutes() + date?.getTimezoneOffset())
 
     addTask({ 
         taskValue, 
@@ -316,6 +329,7 @@ onAuthStateChanged(auth, (user) => {
 
         orderAscDesc.forEach(radio => radio.onchange = () => updateOrderList(user))
         orderChecked.forEach(radio => radio.onchange = () => updateOrderList(user))
+        orderAlphaDate.forEach(radio => radio.onchange = () => updateOrderList(user))
 
         updateOrderList(user)
 
