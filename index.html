@@ -16,7 +16,7 @@
     <title>To Do List</title>
 </head>
 <body>
-    <button data-js="log-out">Sair</button>
+    <button data-js="log-out" class="log__out">Sair</button>
     <div data-js="container__login" class="container__login">
         <div class="login__menu">
             <button class="active">Login</button>
@@ -54,10 +54,10 @@
     <div data-js="container__todo" class="container__todo">
         <div class="todo__header">
             <div class="container__search">
-                <input class="input__search" type="text" placeholder="Pesquisar...">
+                <input class="input__search" name="input__search" type="text" placeholder="Pesquisar...">
 
                 <div class="dropdown">
-                    <button class="dropbtn">Procurar por &#9660;</button>
+                    <button class="dropbtn">Filtrar por &#9660;</button>
                     <div class="dropdown__content">
                         <div>
                             <input type="radio" id="todas" name="order__checked" value="Todas" checked>
@@ -73,20 +73,11 @@
                             <label for="order__asc"><i class="ri-sort-asc input__search-icon" id="btnSortAsc"></i></label>
                             <input type="radio" name="order__asc-desc" id="order__desc" value="order__desc">
                             <label for="order__desc"><i class="ri-sort-desc input__search-icon"id="btnSortDesc"></i></label>
-                        </div>
-
-                        <div>
-                            <input type="radio" id="order__alpha-date" name="order__alpha-date" value="Alfabética" checked>
-                            <label for="order__alpha-date">Alfabética</label>
-                            <input type="radio" id="order__alpha" name="order__alpha-date" value="Data">
-                            <label for="order__alpha">Data</label>
+                            <input type="radio" name="order__asc-desc" id="order__data" value="data">
+                            <label for="order__data">Data</label>
                         </div>
                     </div>
                 </div>
-
-                <span class="material-symbols-outlined search__icon">
-                    search
-                </span>
             </div>
             <div class="config">
                 <div class="colors">

@@ -10,6 +10,7 @@ const pageCadastro = document.querySelector('[data-js="cadastro__page"]')
 const formMenuButtons = [...document.querySelector('.login__menu').children]
 const todoList = document.querySelector('.todo__list')
 const ul = document.querySelector('.todo__list')
+const inputSearch = document.querySelector('.input__search')
 const orderAscDesc = document.querySelectorAll('input[name="order__asc-desc"]')
 const orderChecked = document.querySelectorAll('input[name="order__checked"]')
 
@@ -52,7 +53,6 @@ formMenuButtons.forEach(button => {
         e.target.classList.add('active')
     })
 })
-//const isChecked = document.querySelector(`[data-check="${taskValue}"]`)
 
 /*
     <li class="todo__item" data-id="id">
@@ -75,64 +75,72 @@ formMenuButtons.forEach(button => {
 */
 
 const renderTasks = snapshot => {
-        const documentFragment = document.createDocumentFragment()
+    const documentFragment = document.createDocumentFragment()
 
-        snapshot.docChanges().forEach(docChange => {
-            const { taskValue, date, checked } = docChange.doc.data()
-            const id = docChange.doc.id
+    snapshot.docChanges().forEach(docChange => {
+        const { taskValue, date, checked } = docChange.doc.data()
+        const id = docChange.doc.id
 
-            if(docChange.type === 'added'){
-                const li = document.createElement('li')
-                const divTasks = document.createElement('div')
-                const checkbox = document.createElement('input')
-                const divText = document.createElement('div')
-                const pTask = document.createElement('p')
-                const pDate = document.createElement('p')
-                const divIcons = document.createElement('div')
-                const spanTrash = document.createElement('span')
-                const spanEdit = document.createElement('span')
-                
-                li.classList.add('todo__item')
-                li.setAttribute('data-item', id)
-                li.setAttribute('data-id', id)
-                divTasks.classList.add('todo__tasks')
-                checkbox.type = 'checkbox'
-                checkbox.setAttribute('data-check', id)
-                checked ? checkbox.setAttribute('checked', checked) : ''
-                divText.classList.add('todo__text')
-                pTask.classList.add('task')
-                pTask.setAttribute('class', checked ? 'checked' : '')
-                pDate.classList.add('date')
-                pTask.setAttribute('data-task', id)
-                pTask.textContent = taskValue
-                pDate.setAttribute('data-date', id)
-                pDate.textContent = date
-                divIcons.classList.add('todo__item-icons')
-                spanTrash.classList.add('material-symbols-outlined')
-                spanEdit.classList.add('material-symbols-outlined')
-                spanTrash.setAttribute('data-trash', id)
-                spanEdit.setAttribute('data-edit', id)
-                spanTrash.textContent = 'delete'
-                spanEdit.textContent = 'edit'
+        const dateFirestore = date.toDate()
+        const day = String(dateFirestore.getDate()).padStart(2, '0')
+        const month = String(dateFirestore.getMonth() + 1).padStart(2, '0')
+        const year = dateFirestore.getFullYear()
+        
+        const formatedDate = `${day}/${month}/${year}`
+
+        if(docChange.type === 'added'){
+            const li = document.createElement('li')
+            const divTasks = document.createElement('div')
+            const checkbox = document.createElement('input')
+            const divText = document.createElement('div')
+            const pTask = document.createElement('p')
+            const pDate = document.createElement('p')
+            const divIcons = document.createElement('div')
+            const spanTrash = document.createElement('span')
+            const spanEdit = document.createElement('span')
             
-                divTasks.append(checkbox, divText)
-                divText.append(pTask, pDate)
-                divIcons.append(spanEdit, spanTrash)
-                li.append(divTasks, divIcons)
+            li.classList.add('todo__item')
+            li.setAttribute('data-item', id)
+            li.setAttribute('data-id', id)
+            divTasks.classList.add('todo__tasks')
+            checkbox.type = 'checkbox'
+            checkbox.setAttribute('data-check', id)
+            checked ? checkbox.setAttribute('checked', checked) : ''
+            divText.classList.add('todo__text')
+            pTask.classList.add('task')
+            pTask.setAttribute('class', checked ? 'checked' : '')
+            pDate.classList.add('date')
+            pTask.setAttribute('data-task', id)
+            pTask.textContent = taskValue
+            pDate.setAttribute('data-date', id)
+            pDate.textContent = formatedDate === '12/12/2900' ? '' : formatedDate
+            divIcons.classList.add('todo__item-icons')
+            spanTrash.classList.add('material-symbols-outlined')
+            spanEdit.classList.add('material-symbols-outlined')
+            spanTrash.setAttribute('data-trash', id)
+            spanEdit.setAttribute('data-edit', id)
+            spanTrash.textContent = 'delete'
+            spanEdit.textContent = 'edit'
+        
+            divTasks.append(checkbox, divText)
+            divText.append(pTask, pDate)
+            divIcons.append(spanEdit, spanTrash)
+            li.append(divTasks, divIcons)
 
-                documentFragment.append(li)
-            }
-        })
-        todoList.append(documentFragment)
+            documentFragment.append(li)
+        }
+    })
+    todoList.append(documentFragment)
 }
 
 const clearLis = () => document.querySelectorAll('li').forEach(li => li.remove())
 
-const addTask = async ({ taskValue, date }) => {
+const addTask = async ({ taskValue, date, userID }) => {
     await addDoc(collectionTask, {
         taskValue,
         date,
-        checked: false
+        checked: false,
+        userID
     })
 }
 
@@ -179,10 +187,9 @@ const checkTask = async ({ checkBtn, isChecked }) => {
     }
 }
 
-const updateOrderList = () => {
+const updateOrderList = user => {
     let orderValue = orderBy('taskValue')
     let whereValue = ''
-    
     
     orderAscDesc.forEach(radio => {
         if(!radio.checked)return 
@@ -190,9 +197,11 @@ const updateOrderList = () => {
         if(radio.value === 'order__asc' ){
             orderValue = orderBy('taskValue')
             clearLis()
-        }else{
+        }else if(radio.value === 'order__desc'){
             orderValue = orderBy('taskValue', 'desc')
             clearLis()
+        }else{
+            orderValue = orderBy('date')
         }
     })
     
@@ -208,20 +217,33 @@ const updateOrderList = () => {
         }
     })
 
-    const queryOrder = query(collectionTask, whereValue, orderValue)
-    onSnapshot(queryOrder, renderTasks)
+    const onlyUser = where('userID', '==', user.uid)
+
+    const queryPhrases = query(
+        collectionTask, 
+        whereValue, 
+        onlyUser,
+        orderValue
+    )
+
+    clearLis()
+    onSnapshot(queryPhrases, renderTasks)
 }
 
-const handleAddForm =  e => {
+const handleAddForm =  (e, user) => {
     e.preventDefault()  
 
     const taskValue = DOMPurify.sanitize(e.target.add__input.value).trim()
-    const date = DOMPurify.sanitize(e.target.date.value)
-        .split('-')
-        .reverse()
-        .join('/')
+    const dateInput = DOMPurify.sanitize(e.target.date.value)
+    
+    let date = dateInput ? new Date(dateInput) : new Date('2900-12-12')
+    date.setMinutes(date.getMinutes() + date.getTimezoneOffset())
 
-    addTask({ taskValue, date  })
+    addTask({ 
+        taskValue, 
+        date,
+        userID: user.uid
+    })
 
     e.target.reset()
 }
@@ -237,7 +259,7 @@ const ulController = e => {
     if(editBtn)editTask(editBtn)
 }
 
-formLogin.addEventListener('submit', e => {
+const login = e => {
     e.preventDefault()
 
     const loginUser = e.target.login__user.value
@@ -251,38 +273,15 @@ formLogin.addEventListener('submit', e => {
     }
 
     e.target.reset()
-})
+}
 
-formRegister.addEventListener('submit', async e => {
-    e.preventDefault()
-
-    const registerUser = e.target.register__user.value
-    const registerPassword = e.target.register__password.value
-    const registerPasswordConfirmed = e.target.register__confirmed.value
-
-    if(registerPassword === registerPasswordConfirmed){
-        try{
-            const userCredential = await createUserWithEmailAndPassword(auth, registerUser, registerPassword)
-            const user = userCredential.user
-
-
-        }catch(err){
-            console.log(err)
-        }
-    }
-
-
-    e.target.reset()
-})
-
-logOutBtn.addEventListener('click', async () => {
+const logOut = async () => {
     try {
         await signOut(auth)
-        console.log('saiu')
     } catch (error) {
         console.log('erro ao sair')
     }
-})
+}
 
 const createUserDoc = async user => {
     try {
@@ -314,18 +313,58 @@ onAuthStateChanged(auth, (user) => {
         todoContainer.style.display = 'block'
 
         const uid = user.uid
-    
+
+        orderAscDesc.forEach(radio => radio.onchange = () => updateOrderList(user))
+        orderChecked.forEach(radio => radio.onchange = () => updateOrderList(user))
+
+        updateOrderList(user)
+
+        formLogin.removeEventListener('submit', login)
+        formAddTask.onsubmit = e => handleAddForm(e, user)
+        logOutBtn.addEventListener('click', logOut)
+        logOutBtn.style.display = 'block'
+
     } else {
         todoContainer.style.display = 'none'
         loginContainer.style.display = 'flex'
+
+        formLogin.addEventListener('submit', login)
+        logOutBtn.removeEventListener('click', logOut)
+        formAddTask.onsubmit = ''
+        logOutBtn.style.display = 'none'
     }
 })
 
-
-orderAscDesc.forEach(radio => radio.addEventListener('change', updateOrderList))
-orderChecked.forEach(radio => radio.addEventListener('change', updateOrderList))
-
-updateOrderList()
-
 ul.addEventListener('click', ulController)
-formAddTask.addEventListener('submit', handleAddForm)
+
+formRegister.addEventListener('submit', async e => {
+    e.preventDefault()
+
+    const registerUser = e.target.register__user.value
+    const registerPassword = e.target.register__password.value
+    const registerPasswordConfirmed = e.target.register__confirmed.value
+
+    if(registerPassword === registerPasswordConfirmed){
+        try{
+            const userCredential = await createUserWithEmailAndPassword(auth, registerUser, registerPassword)
+            const user = userCredential.user
+
+
+        }catch(err){
+            console.log(err)
+        }
+    }
+
+
+    e.target.reset()
+})
+
+inputSearch.addEventListener('input', e => {
+    const inputValue = e.target.value.trim().toLowerCase()
+    const tasks = [...document.querySelectorAll('.todo__text')]
+
+    const filteredTask = tasks.filter(task => task.textContent.toLocaleLowerCase().includes(inputValue))
+    const filteredNotTask = tasks.filter(task => !task.textContent.toLocaleLowerCase().includes(inputValue))
+
+    console.log(filteredTask, filteredNotTask);
+})

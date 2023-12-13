@@ -254,3 +254,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .checked {
     text-decoration: line-through;
 }
+
+.log__out {
+    background-color: rgb(230, 7, 7);
+    padding: 10px 15px;
+    border-radius: 5px;
+    color: white;
+    position: absolute;
+    right: 5px;
+    top: 5px;
+    box-shadow: var(--secondary-shadow);
+}
