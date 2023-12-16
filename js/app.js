@@ -2,6 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js"
 import { getFirestore, collection, addDoc, doc, onSnapshot,deleteDoc, updateDoc, orderBy, query, where, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"
+import { activeDarkMode, activeLightMode, activeSetActiveStyle } from "./switch-color.js"
 
 
 const formAddTask = document.querySelector('[data-js="add__task"]')
@@ -14,6 +15,7 @@ const inputSearch = document.querySelector('.input__search')
 const orderAscDesc = document.querySelectorAll('input[name="order__asc-desc"]')
 const orderChecked = document.querySelectorAll('input[name="order__checked"]')
 const orderAlphaDate = document.querySelectorAll('input[name="order__alpha-date"]')
+const darkModeIcon = document.querySelector('.dark__mode-icon')
 
 const formLogin = document.querySelector('[data-js="login"]')
 const formRegister = document.querySelector('[data-js="register"]')
@@ -159,19 +161,29 @@ const delTask = async id => {
 }
 
 const editTask = async id => {
-    const mainDate = document.querySelector('#date')
-    const mainInputText = document.querySelector('.add__input')
-    const textToEdit = document.querySelector(`[data-task="${id}"]`).textContent
+    const textToEdit = document.querySelector(`[data-task="${id}"]`)
     const dateToEdit = document.querySelector(`[data-date="${id}"]`)
-        .textContent
-        .split('/')
-        .reverse()
-        .join('-')
 
+    const dateFormatInput = dateToEdit.textContent.split('/').reverse().join('-')
 
-    mainDate.value = dateToEdit
-    mainInputText.value = textToEdit
-    mainInputText.focus()
+    const inputEditText = document.createElement('input')
+    const inputEditDate = document.createElement('input')
+    inputEditDate.type = 'date'
+    inputEditDate.value = dateFormatInput
+    inputEditText.classList.add('input__edit-text')
+    inputEditDate.style.padding = '5px'
+    inputEditDate.style.fontWeight = '500'
+    inputEditText.value = textToEdit.textContent
+
+    
+    dateToEdit.replaceWith(inputEditDate)
+    textToEdit.replaceWith(inputEditText)
+
+    inputEditText.focus()
+
+    const switchToParagraph = () => {
+        
+    }
 }
 
 const checkTask = async ({ checkBtn, isChecked }) => {
@@ -185,6 +197,26 @@ const checkTask = async ({ checkBtn, isChecked }) => {
         isChecked ? changeText.classList.add('checked') : changeText.classList.remove('checked')
     } catch (error) {
         console.log('Erro ao confirmar')
+    }
+}
+
+export const updateUserColor = async (userID, color) => {   
+    try {
+        await updateDoc(doc(db, "users", userID), {
+            colorUser: color
+        })
+    } catch (error) {
+        console.log('Erro user color', error)
+    }
+}
+
+export const updateDarkMode = async userID => {
+    try {
+        await updateDoc(doc(db, 'users', userID), {
+            darkMode: darkModeIcon.textContent.trim()
+        })
+    } catch (error) {
+        console.log('Erro user dark mode', error)
     }
 }
 
@@ -301,7 +333,7 @@ const createUserDoc = async user => {
         const userDocRef = doc(db, 'users', user.uid)
         const docSnapshot = await getDoc(userDocRef)
 
-        if(!docSnapshot.exist){
+        if(!docSnapshot.exists()){
             await setDoc(userDocRef, {
                 name: user.displayName,
                 email: user.email,
@@ -314,24 +346,36 @@ const createUserDoc = async user => {
     }
 }
 
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async user => {
     const loginContainer = document.querySelector('[data-js="container__login"]')
     const todoContainer = document.querySelector('[data-js="container__todo"]')
 
     if (user) {
         createUserDoc(user)
-
+        userIDModule.setUserID(user.uid)
 
         loginContainer.style.display = 'none'
         todoContainer.style.display = 'block'
-
-        const uid = user.uid
 
         orderAscDesc.forEach(radio => radio.onchange = () => updateOrderList(user))
         orderChecked.forEach(radio => radio.onchange = () => updateOrderList(user))
         orderAlphaDate.forEach(radio => radio.onchange = () => updateOrderList(user))
 
         updateOrderList(user)
+
+        const docSnap = await getDoc(doc(db, "users", user.uid))
+    
+        const colorUserData = docSnap.exists() ? docSnap.data().colorUser : 'color-4';
+        
+        const darkModeUser = docSnap.exists() ? docSnap.data().darkMode : 'dark_mode'
+
+        if (darkModeUser === 'dark_mode') {
+            activeLightMode()
+        } else if (darkModeUser === 'light_mode') {
+            activeDarkMode()
+        }
+        
+        activeSetActiveStyle(colorUserData)
 
         formLogin.removeEventListener('submit', login)
         formAddTask.onsubmit = e => handleAddForm(e, user)
@@ -348,6 +392,23 @@ onAuthStateChanged(auth, (user) => {
         logOutBtn.style.display = 'none'
     }
 })
+
+export const userIDModule = (() => {
+    let userID = null
+
+    const setUserID = (newUserID) => {
+        userID = newUserID
+    }
+
+    const getUserID = () => {
+        return userID
+    }
+
+    return {
+        setUserID,
+        getUserID
+    }
+})()
 
 ul.addEventListener('click', ulController)
 
@@ -378,7 +439,8 @@ inputSearch.addEventListener('input', e => {
     const tasks = [...document.querySelectorAll('.todo__text')]
 
     const filteredTask = tasks.filter(task => task.textContent.toLocaleLowerCase().includes(inputValue))
-    const filteredNotTask = tasks.filter(task => !task.textContent.toLocaleLowerCase().includes(inputValue))
+    const notFilteredTask = tasks.filter(task => !task.textContent.toLocaleLowerCase().includes(inputValue))
 
-    console.log(filteredTask, filteredNotTask);
+    filteredTask.forEach(task => task.parentNode.parentNode.classList.remove('hidden'))
+    notFilteredTask.forEach(task => task.parentNode.parentNode.classList.add('hidden'))
 })

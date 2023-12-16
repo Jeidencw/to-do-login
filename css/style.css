@@ -265,3 +265,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     top: 5px;
     box-shadow: var(--secondary-shadow);
 }
+
+.hidden {
+    display: none;
+}
+
+.input__edit-text {
+    background-color: transparent;
+    padding: 5px;
+    font-size: 16px;
+    outline: none;
+    border: none;
+    box-shadow: var(--input-focus);
+    font-weight: 500;
+}
