@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js"
 import { getFirestore, collection, addDoc, doc, onSnapshot,deleteDoc, updateDoc, orderBy, query, where, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, signInWithRedirect, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"
 import { activeDarkMode, activeLightMode, activeSetActiveStyle } from "./switch-color.js"
 
 
@@ -16,6 +16,10 @@ const orderAscDesc = document.querySelectorAll('input[name="order__asc-desc"]')
 const orderChecked = document.querySelectorAll('input[name="order__checked"]')
 const orderAlphaDate = document.querySelectorAll('input[name="order__alpha-date"]')
 const darkModeIcon = document.querySelector('.dark__mode-icon')
+const loginContainer = document.querySelector('[data-js="container__login"]')
+const todoContainer = document.querySelector('[data-js="container__todo"]')
+const buttonLoginGoogle = document.querySelector('[data-js="button__login-google"]')
+
 
 const formLogin = document.querySelector('[data-js="login"]')
 const formRegister = document.querySelector('[data-js="register"]')
@@ -31,12 +35,29 @@ const firebaseConfig = {
   measurementId: "G-H5VQCYKDN0"
 }
 
+export const userIDModule = (() => {
+    let userID = null
+
+    const setUserID = (newUserID) => {
+        userID = newUserID
+    }
+
+    const getUserID = () => {
+        return userID
+    }
+
+    return {
+        setUserID,
+        getUserID
+    }
+})()
 
 const app = initializeApp(firebaseConfig)
 const analytics = getAnalytics(app)
 const db = getFirestore(app)
 const collectionTask = collection(db, 'tasks')
 const auth = getAuth(app)
+const provider = new GoogleAuthProvider()
 
 
 formMenuButtons.forEach(button => {
@@ -77,6 +98,8 @@ formMenuButtons.forEach(button => {
     </li>
 */
 
+const clearLis = () => document.querySelectorAll('li').forEach(li => li.remove())
+
 const renderTasks = snapshot => {
     const documentFragment = document.createDocumentFragment()
 
@@ -93,36 +116,43 @@ const renderTasks = snapshot => {
 
         if(docChange.type === 'added'){
             const li = document.createElement('li')
-            const divTasks = document.createElement('div')
-            const checkbox = document.createElement('input')
-            const divText = document.createElement('div')
-            const pTask = document.createElement('p')
-            const pDate = document.createElement('p')
-            const divIcons = document.createElement('div')
-            const spanTrash = document.createElement('span')
-            const spanEdit = document.createElement('span')
-            
             li.classList.add('todo__item')
             li.setAttribute('data-item', id)
             li.setAttribute('data-id', id)
+
+            const divTasks = document.createElement('div')
             divTasks.classList.add('todo__tasks')
+
+            const checkbox = document.createElement('input')
             checkbox.type = 'checkbox'
             checkbox.setAttribute('data-check', id)
             checked ? checkbox.setAttribute('checked', checked) : ''
+
+            const divText = document.createElement('div')
             divText.classList.add('todo__text')
+
+            const pTask = document.createElement('p')
             pTask.classList.add('task')
             pTask.setAttribute('class', checked ? 'checked' : '')
-            pDate.classList.add('date')
             pTask.setAttribute('data-task', id)
             pTask.textContent = taskValue
+
+            const pDate = document.createElement('p')
+            pDate.classList.add('date')
             pDate.setAttribute('data-date', id)
             pDate.textContent = formatedDate === 'undefined/NaN/undefined' ? '' : formatedDate
+            
+            const divIcons = document.createElement('div')
             divIcons.classList.add('todo__item-icons')
+
+            const spanTrash = document.createElement('span')
             spanTrash.classList.add('material-symbols-outlined')
-            spanEdit.classList.add('material-symbols-outlined')
             spanTrash.setAttribute('data-trash', id)
-            spanEdit.setAttribute('data-edit', id)
             spanTrash.textContent = 'delete'
+
+            const spanEdit = document.createElement('span')
+            spanEdit.classList.add('material-symbols-outlined')
+            spanEdit.setAttribute('data-edit', id)
             spanEdit.textContent = 'edit'
         
             divTasks.append(checkbox, divText)
@@ -136,15 +166,55 @@ const renderTasks = snapshot => {
     todoList.append(documentFragment)
 }
 
-const clearLis = () => document.querySelectorAll('li').forEach(li => li.remove())
+const handleInputSearch = e => {
+    const inputValue = e.target.value.trim().toLowerCase()
+    const tasks = [...document.querySelectorAll('.todo__text')]
 
-const addTask = async ({ taskValue, date, userID }) => {
+    const filteredTask = tasks.filter(task => task.textContent.toLocaleLowerCase().includes(inputValue))
+    const notFilteredTask = tasks.filter(task => !task.textContent.toLocaleLowerCase().includes(inputValue))
+
+    filteredTask.forEach(task => task.parentNode.parentNode.classList.remove('hidden'))
+    notFilteredTask.forEach(task => task.parentNode.parentNode.classList.add('hidden'))
+}
+
+const handleRegisterForm = async e => {
+    e.preventDefault()
+
+    const registerUser = e.target.register__user.value
+    const registerPassword = e.target.register__password.value
+    const registerPasswordConfirmed = e.target.register__confirmed.value
+
+    if(registerPassword === registerPasswordConfirmed){
+        try{
+            const userCredential = await createUserWithEmailAndPassword(auth, registerUser, registerPassword)
+            const user = userCredential.user
+
+
+        }catch(err){
+            console.log(err)
+        }
+    }
+
+    e.target.reset()
+}
+
+const handleAddForm = async (e, user) => {
+    e.preventDefault()  
+
+    const taskValue = DOMPurify.sanitize(e.target.add__input.value).trim()
+    const dateInput = DOMPurify.sanitize(e.target.date.value)
+    
+    let date = dateInput ? new Date(dateInput) : null
+    date?.setMinutes(date.getMinutes() + date?.getTimezoneOffset())
+
     await addDoc(collectionTask, {
         taskValue,
         date,
         checked: false,
-        userID
+        userID: user.uid
     })
+    
+    e.target.reset()
 }
 
 const delTask = async id => {
@@ -160,11 +230,25 @@ const delTask = async id => {
     }
 }
 
-const editTask = async id => {
-    const textToEdit = document.querySelector(`[data-task="${id}"]`)
-    const dateToEdit = document.querySelector(`[data-date="${id}"]`)
+const editState = (() => {
+    let isEditing = false
 
-    const dateFormatInput = dateToEdit.textContent.split('/').reverse().join('-')
+    return{
+        getIsEditing: () => isEditing,
+        setIsEditing: () => isEditing = !isEditing
+    }
+})()
+
+const editTask = async id => {
+    const inputTextToEdit = document.querySelector(`[data-task="${id}"]`)
+    const inputDateToEdit = document.querySelector(`[data-date="${id}"]`)
+    const inputCheck = document.querySelector(`[data-check="${id}"]`)
+    const dateFormatInput = inputDateToEdit.textContent.split('/').reverse().join('-')
+
+    ul.removeEventListener('click', ulController)
+
+    inputTextToEdit.classList.remove('checked')
+    inputCheck.checked = false
 
     const inputEditText = document.createElement('input')
     const inputEditDate = document.createElement('input')
@@ -173,17 +257,53 @@ const editTask = async id => {
     inputEditText.classList.add('input__edit-text')
     inputEditDate.style.padding = '5px'
     inputEditDate.style.fontWeight = '500'
-    inputEditText.value = textToEdit.textContent
-
+    inputEditText.value = DOMPurify.sanitize(inputTextToEdit.textContent)
     
-    dateToEdit.replaceWith(inputEditDate)
-    textToEdit.replaceWith(inputEditText)
+    inputDateToEdit.replaceWith(inputEditDate)
+    inputTextToEdit.replaceWith(inputEditText)
 
     inputEditText.focus()
 
-    const switchToParagraph = () => {
-        
+    const switchToParagraph = async () => {
+        inputTextToEdit.textContent = inputEditText.value
+        inputDateToEdit.textContent = inputEditDate.value.split('-').reverse().join('/')
+        inputEditDate.replaceWith(inputDateToEdit)
+        inputEditText.replaceWith(inputTextToEdit)
+
+        let date = inputEditDate.value ? new Date(inputEditDate.value) : null
+        date?.setMinutes(date.getMinutes() + date?.getTimezoneOffset())
+        ul.addEventListener('click', ulController)
+
+        try {
+            await updateDoc(doc(db, 'tasks', id), {
+                taskValue: inputEditText.value,
+                date,
+                checked: false
+            })
+        } catch (error) {
+            console.log('erro ao salvar edição')
+        }
     }
+
+    inputEditText.parentNode.addEventListener('keypress', e => {
+        if(e.key === 'Enter'){
+            switchToParagraph()
+        }
+    })
+
+    const handleClickEdit = e => {
+        if(e.target !== inputEditText && e.target !== inputEditDate){
+            if(editState.getIsEditing()){
+                switchToParagraph()  
+                editState.setIsEditing()
+                document.removeEventListener('click', handleClickEdit)
+                return
+            }
+            editState.setIsEditing()
+        }
+    }
+
+    document.addEventListener('click', handleClickEdit)
 }
 
 const checkTask = async ({ checkBtn, isChecked }) => {
@@ -236,7 +356,6 @@ const updateOrderList = user => {
             clearLis()
         }
     })
-    
     orderChecked.forEach(radio => {
         if(!radio.checked)return
         
@@ -248,7 +367,6 @@ const updateOrderList = user => {
             clearLis()
         }
     })
-
     orderAlphaDate.forEach(radio => {
         if(!radio.checked)return
         
@@ -260,10 +378,7 @@ const updateOrderList = user => {
             clearLis()
         }
     })
-
-
     const onlyUser = where('userID', '==', user.uid)
-
     const queryPhrases = query(
         collectionTask, 
         whereValue, 
@@ -273,24 +388,6 @@ const updateOrderList = user => {
 
     clearLis()
     onSnapshot(queryPhrases, renderTasks)
-}
-
-const handleAddForm =  (e, user) => {
-    e.preventDefault()  
-
-    const taskValue = DOMPurify.sanitize(e.target.add__input.value).trim()
-    const dateInput = DOMPurify.sanitize(e.target.date.value)
-    
-    let date = dateInput ? new Date(dateInput) : null
-    date?.setMinutes(date.getMinutes() + date?.getTimezoneOffset())
-
-    addTask({ 
-        taskValue, 
-        date,
-        userID: user.uid
-    })
-
-    e.target.reset()
 }
 
 const ulController = e => {
@@ -316,15 +413,22 @@ const login = e => {
     } catch (error) {
         console.log(error)
     }
-
     e.target.reset()
+}
+
+const loginWithGoogle = async () => {
+    try {
+        await signInWithRedirect(auth, provider)
+    } catch (error) {
+        console.log('error google', error);
+    }
 }
 
 const logOut = async () => {
     try {
         await signOut(auth)
     } catch (error) {
-        console.log('erro ao sair')
+        alert('erro ao sair')
     }
 }
 
@@ -340,107 +444,69 @@ const createUserDoc = async user => {
                 userID: user.uid
             })
         }
-
     } catch (error) {
         console.log('Erro ao registrar usuario')
     }
 }
 
-onAuthStateChanged(auth, async user => {
-    const loginContainer = document.querySelector('[data-js="container__login"]')
-    const todoContainer = document.querySelector('[data-js="container__todo"]')
+const getUserColor = async user => {
+    const docUser = await getDoc(doc(db, "users", user.uid))
 
+    const colorUserData = docUser.exists() ? docUser.data().colorUser : 'color-4';
+    const darkModeUser = docUser.exists() ? docUser.data().darkMode : 'dark_mode'
+
+    if (darkModeUser === 'dark_mode') {
+        activeLightMode()
+    } else if (darkModeUser === 'light_mode') {
+        activeDarkMode()
+    }
+
+    activeSetActiveStyle(colorUserData)
+}
+
+const handleLoggedUser = async user =>{
+    createUserDoc(user)
+
+    userIDModule.setUserID(user.uid)
+
+    loginContainer.style.display = 'none'
+    todoContainer.style.display = 'block'
+
+    orderAscDesc.forEach(radio => radio.onchange = () => updateOrderList(user))
+    orderChecked.forEach(radio => radio.onchange = () => updateOrderList(user))
+    orderAlphaDate.forEach(radio => radio.onchange = () => updateOrderList(user))
+
+    updateOrderList(user)
+    getUserColor(user)
+
+    formLogin.removeEventListener('submit', login)
+    formAddTask.onsubmit = e => handleAddForm(e, user)
+    logOutBtn.addEventListener('click', logOut)
+    logOutBtn.style.display = 'block'
+
+}
+
+const handleNotLoggedUser = () => {
+    todoContainer.style.display = 'none'
+    loginContainer.style.display = 'flex'
+
+    formLogin.addEventListener('submit', login)
+    logOutBtn.removeEventListener('click', logOut)
+    formAddTask.onsubmit = ''
+    logOutBtn.style.display = 'none'
+}
+
+const handleAuthStateChanged = user => {
     if (user) {
-        createUserDoc(user)
-        userIDModule.setUserID(user.uid)
-
-        loginContainer.style.display = 'none'
-        todoContainer.style.display = 'block'
-
-        orderAscDesc.forEach(radio => radio.onchange = () => updateOrderList(user))
-        orderChecked.forEach(radio => radio.onchange = () => updateOrderList(user))
-        orderAlphaDate.forEach(radio => radio.onchange = () => updateOrderList(user))
-
-        updateOrderList(user)
-
-        const docSnap = await getDoc(doc(db, "users", user.uid))
-    
-        const colorUserData = docSnap.exists() ? docSnap.data().colorUser : 'color-4';
-        
-        const darkModeUser = docSnap.exists() ? docSnap.data().darkMode : 'dark_mode'
-
-        if (darkModeUser === 'dark_mode') {
-            activeLightMode()
-        } else if (darkModeUser === 'light_mode') {
-            activeDarkMode()
-        }
-        
-        activeSetActiveStyle(colorUserData)
-
-        formLogin.removeEventListener('submit', login)
-        formAddTask.onsubmit = e => handleAddForm(e, user)
-        logOutBtn.addEventListener('click', logOut)
-        logOutBtn.style.display = 'block'
-
+        handleLoggedUser(user)
     } else {
-        todoContainer.style.display = 'none'
-        loginContainer.style.display = 'flex'
-
-        formLogin.addEventListener('submit', login)
-        logOutBtn.removeEventListener('click', logOut)
-        formAddTask.onsubmit = ''
-        logOutBtn.style.display = 'none'
+        handleNotLoggedUser()
     }
-})
+}
 
-export const userIDModule = (() => {
-    let userID = null
-
-    const setUserID = (newUserID) => {
-        userID = newUserID
-    }
-
-    const getUserID = () => {
-        return userID
-    }
-
-    return {
-        setUserID,
-        getUserID
-    }
-})()
+onAuthStateChanged(auth, handleAuthStateChanged)
 
 ul.addEventListener('click', ulController)
-
-formRegister.addEventListener('submit', async e => {
-    e.preventDefault()
-
-    const registerUser = e.target.register__user.value
-    const registerPassword = e.target.register__password.value
-    const registerPasswordConfirmed = e.target.register__confirmed.value
-
-    if(registerPassword === registerPasswordConfirmed){
-        try{
-            const userCredential = await createUserWithEmailAndPassword(auth, registerUser, registerPassword)
-            const user = userCredential.user
-
-
-        }catch(err){
-            console.log(err)
-        }
-    }
-
-
-    e.target.reset()
-})
-
-inputSearch.addEventListener('input', e => {
-    const inputValue = e.target.value.trim().toLowerCase()
-    const tasks = [...document.querySelectorAll('.todo__text')]
-
-    const filteredTask = tasks.filter(task => task.textContent.toLocaleLowerCase().includes(inputValue))
-    const notFilteredTask = tasks.filter(task => !task.textContent.toLocaleLowerCase().includes(inputValue))
-
-    filteredTask.forEach(task => task.parentNode.parentNode.classList.remove('hidden'))
-    notFilteredTask.forEach(task => task.parentNode.parentNode.classList.add('hidden'))
-})
+formRegister.addEventListener('submit', handleRegisterForm)
+inputSearch.addEventListener('input', handleInputSearch)
+buttonLoginGoogle.addEventListener('click', loginWithGoogle)

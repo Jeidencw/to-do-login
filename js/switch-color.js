@@ -70,23 +70,6 @@ const switchDarkMode = () => {
     }
 }
 
-export const userColorModule = (() => {
-    let userID = null
-
-    const setUserID = (newUserID) => {
-        userID = newUserID
-    }
-
-    const getUserID = () => {
-        return userID
-    }
-
-    return {
-        setUserID,
-        getUserID
-    }
-})()
-
 document.addEventListener('click', ({target}) => {
     if (target !== colors && !colors.contains(target) && target !== colorSwitcherIcon) {
         closeSwitchOptions()
